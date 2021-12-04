@@ -1,23 +1,28 @@
 'use strict';
+let lastReportTime = 0;
+
 window.onload = function () {
-    // let url = 'http://localhost:52330/sales.json';
-    let url = 'http://127.0.0.1:5500/sales.json';
-    // let url = "http://gumball.wickedlysmart.com" ;
-    let request = new XMLHttpRequest();
-    request.open('GET', url);
-
-    request.onload = function () {
-        if (request.status === 200) {
-            updateSales(request.responseText);
-        }
-    };
-
-    request.send(null);
+    setInterval(handleRefresh, 3000);
 };
 
-function updateSales(responseText) {
+function handleRefresh() {
+    let url = `http://gumball.wickedlysmart.com?callback=updateSales&lastreporttime=${lastReportTime}&random=${(new Date()).getTime()}`;
+    let newScriptElement = document.createElement('script');
+    newScriptElement.setAttribute('src', url);
+    newScriptElement.setAttribute('id', 'jsonp');
+
+    let oldScriptElement = document.getElementById('jsonp');
+    let head = document.getElementsByTagName('head')[0];
+
+    if (oldScriptElement === null) {
+        head.appendChild(newScriptElement);
+    } else {
+        head.replaceChild(newScriptElement, oldScriptElement);
+    }
+}
+
+function updateSales(sales) {
     let salesDiv = document.getElementById('sales');
-    let sales = JSON.parse(responseText);
 
     for (let i = 0; i < sales.length; i++) {
         let sale = sales[i];
@@ -25,5 +30,9 @@ function updateSales(responseText) {
         div.setAttribute('class', 'saleItem');
         div.innerHTML = `${sale.name} sold ${sale.sales} gumballs`;
         salesDiv.appendChild(div);
+    }
+
+    if (sales.length > 0) {
+        lastReportTime = sales[sales.length - 1].time;
     }
 }
